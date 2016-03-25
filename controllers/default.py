@@ -1,0 +1,34 @@
+def login():
+    username = request.vars.userid
+    password = request.vars.password
+    user = db((db.users.username==username) & (db.users.password==password)).select().first()
+    try:
+			db(db.valid_user.id>0).delete()
+    except Exception, e:
+            print "cannot clear"
+    db.valid_user.insert(user_id=user)
+    return dict(success=False if not user else True, user=user, valid_user = db(db.valid_user.id>0).select())
+
+def logout():
+    return "somestring"
+
+def notifications():
+    return "chill"
+
+@request.restful()
+def api():
+    response.view = 'generic.'+request.extension
+    def GET(*args,**vars):
+        patterns = 'auto'
+        parser = db.parse_as_rest(patterns,args,vars)
+        if parser.status == 200:
+            return dict(content=parser.response)
+        else:
+            raise HTTP(parser.status,parser.error)
+    def POST(table_name,**vars):
+        return db[table_name].validate_and_insert(**vars)
+    def PUT(table_name,record_id,**vars):
+        return db(db[table_name]._id==record_id).update(**vars)
+    def DELETE(table_name,record_id):
+        return db(db[table_name]._id==record_id).delete()
+    return dict(GET=GET, POST=POST, PUT=PUT, DELETE=DELETE)
